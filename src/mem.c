@@ -57,7 +57,6 @@ static struct trans_table_t * get_trans_table(
             	}
 	}
 	return NULL;
-
 }
 
 /* Translate virtual address to physical address. If [virtual_addr] is valid,
@@ -81,7 +80,6 @@ static int translate(
 	if (trans_table == NULL) {
 		return 0;
 	}
-
 	int i;
 	for (i = 0; i < trans_table->size; i++) {
 		if (trans_table->table[i].v_index == second_lv) {
@@ -166,13 +164,12 @@ addr_t alloc_mem(uint32_t size, struct pcb_t * proc) {
 					int n = t->size;
 
 					t->size++;
-					t->table[n].next_lv = (struct page_table_t *)malloc(sizeof(struct page_table_t));
+					t->table[n].next_lv = (struct trans_table_t *)malloc(sizeof(struct page_table_t));
 					t->table[n].next_lv->size++;
 					t->table[n].v_index = seg_idx;
 					t->table[n].next_lv->table[0].v_index = page_idx;
 					t->table[n].next_lv->table[0].p_index = physical_addr >> OFFSET_LEN;
 				}
-
 				prev_p_i = p_i;
 				v_i++;
 				num_allocated_pages++;
