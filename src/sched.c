@@ -1,4 +1,3 @@
-
 #include "queue.h"
 #include "sched.h"
 #include <pthread.h>
@@ -9,7 +8,7 @@ static struct queue_t ready_queue;
 static struct queue_t run_queue;
 static pthread_mutex_t queue_lock;
 #define MLQ_SCHED
-#define MAX_PRIO 5
+#define MAX_PRIO 140
 
 #ifdef MLQ_SCHED
 static struct queue_t mlq_ready_queue[MAX_PRIO];
@@ -47,8 +46,14 @@ void init_scheduler(void) {
 struct pcb_t * get_mlq_proc(void) {
 	struct pcb_t * proc = NULL;
 	/*TODO: get a process from PRIORITY [ready_queue].
-	 * Remember to use lock to protect the queue.
+	 * Remember to use lock to protect the queue
 	 * */
+	pthread_mutex_lock(&queue_lock);
+	for (int i = 0; i < MAX_PRIO; i++) {
+			proc = dequeue(&mlq_ready_queue[i]);
+			if (proc) break;
+	}
+	pthread_mutex_unlock(&queue_lock);
 	return proc;	
 }
 
@@ -81,6 +86,16 @@ struct pcb_t * get_proc(void) {
 	/*TODO: get a process from [ready_queue].
 	 * Remember to use lock to protect the queue.
 	 * */
+	pthread_mutex_lock(&queue_lock);
+	if (empty(&ready_queue)) {
+		for(int i=0; i < run_queue.size; i++){
+			ready_queue.proc[i] = run_queue[i];
+		}
+		ready_queue.size = run_queue.size;
+		run_queue.size = 0;
+	}
+	proc = dequeue(&ready_queue);
+	pthread_mutex_unlock(&queue_lock);
 	return proc;
 }
 

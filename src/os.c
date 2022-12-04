@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #define MLQ_SCHED
+
 static int time_slot;
 static int num_cpus;
 static int done = 0;
@@ -129,6 +130,7 @@ static void read_config(const char * path) {
 		char proc[100];
 #ifdef MLQ_SCHED
 		fscanf(file, "%lu %s %lu\n", &ld_processes.start_time[i], proc, &ld_processes.prio[i]);
+		printf("read config:%d -%s - %d\n",ld_processes.start_time[i], proc, ld_processes.prio[i]);
 #else
 		fscanf(file, "%lu %s\n", &ld_processes.start_time[i], proc);
 #endif
@@ -147,6 +149,8 @@ int main(int argc, char * argv[]) {
 	strcat(path, "input/");
 	strcat(path, argv[1]);
 	read_config(path);
+
+	printf("%s\n", path);
 
 	pthread_t * cpu = (pthread_t*)malloc(num_cpus * sizeof(pthread_t));
 	struct cpu_args * args =
