@@ -161,38 +161,43 @@ addr_t alloc_mem(uint32_t size, struct pcb_t *proc)
 		{
 			if (_mem_stat[p_i].proc == 0)
 			{
+				/* This is the code that updates the `_mem_stat` array. */
 				_mem_stat[p_i].proc = proc->pid;
 				_mem_stat[p_i].index = v_i;
 				if (v_i != 0)
 					_mem_stat[prev_p_i].next = p_i;
+				/* Getting the physical address of the page, the page index and the translation index. */
 
 				addr_t physical_addr = p_i << OFFSET_LEN;
-				addr_t seg_idx = get_first_lv(ret_mem + v_i * PAGE_SIZE);
-				addr_t page_idx = get_second_lv(ret_mem + v_i * PAGE_SIZE);
+				addr_t page_idx = get_first_lv(ret_mem + v_i * PAGE_SIZE);
+				addr_t trans_idx = get_second_lv(ret_mem + v_i * PAGE_SIZE);
 
-				struct trans_table_t *table = get_trans_table(seg_idx, proc->page_table);
+				struct trans_table_t *table = get_trans_table(page_idx, proc->page_table);
+				/* This is the code that adds a new entry to the page table. */
 				if (table)
 				{
-					table->table[table->size].v_index = page_idx;
+					table->table[table->size].v_index = trans_idx;
 					table->table[table->size].p_index = physical_addr >> OFFSET_LEN;
 					table->size++;
 				}
 				else
 				{
+				/* This is the code that adds a new entry to the page table. */
 					struct page_table_t *t = proc->page_table;
 					int n = t->size;
-
 					t->size++;
 					t->table[n].next_lv = (struct trans_table_t *)malloc(sizeof(struct trans_table_t));
 					t->table[n].next_lv->size++;
-					t->table[n].v_index = seg_idx;
-					t->table[n].next_lv->table[0].v_index = page_idx;
+					t->table[n].v_index = page_idx;
+					t->table[n].next_lv->table[0].v_index = trans_idx;
 					t->table[n].next_lv->table[0].p_index = physical_addr >> OFFSET_LEN;
 				}
 
+				/* This is the code that updates the `_mem_stat` array. */
 				prev_p_i = p_i;
 				v_i++;
 				num_allocated_pages++;
+				/* This is to ensure that the last page in the allocated memory region has a `next` value of `-1`. */
 				if (num_allocated_pages == num_pages)
 				{
 					_mem_stat[prev_p_i].next = -1;
@@ -202,6 +207,8 @@ addr_t alloc_mem(uint32_t size, struct pcb_t *proc)
 		}
 	}
 	pthread_mutex_unlock(&mem_lock);
+	// printf("-----Allocated-----------------------------------------\n");
+	// dump();
 	return ret_mem;
 }
 
@@ -225,15 +232,15 @@ int free_mem(addr_t address, struct pcb_t *proc)
 		while (index != -1)
 		{
 			_mem_stat[index].proc = 0;
-			addr_t seg_idx = get_first_lv(address + v_i * PAGE_SIZE);
-			addr_t page_idx = get_second_lv(address + v_i * PAGE_SIZE);
+			addr_t page_idx = get_first_lv(address + v_i * PAGE_SIZE);
+			addr_t trans_idx = get_second_lv(address + v_i * PAGE_SIZE);
 			for (int n = 0; n < t->size; n++)
 			{
-				if (t->table[n].v_index == seg_idx)
+				if (t->table[n].v_index == page_idx)
 				{
 					for (int m = 0; m < t->table[n].next_lv->size; m++)
 					{
-						if (t->table[n].next_lv->table[m].v_index == page_idx)
+						if (t->table[n].next_lv->table[m].v_index == trans_idx)
 						{
 							int k = 0;
 							for (k = m; k < t->table[n].next_lv->size - 1; k++)
@@ -268,6 +275,8 @@ int free_mem(addr_t address, struct pcb_t *proc)
 		}
 	}
 	pthread_mutex_unlock(&mem_lock);
+	// printf("-----Freed---------------------------------------------\n");
+	// dump();
 	return 0;
 }
 
