@@ -43,18 +43,39 @@ void init_scheduler(void) {
  *  We implement stateful here using transition technique
  *  State representation   prio = 0 .. MAX_PRIO, curr_slot = 0..(MAX_PRIO - prio)
  */
-struct pcb_t * get_mlq_proc(void) {
+struct pcb_t *get_mlq_proc(void)
+{
 	struct pcb_t * proc = NULL;
 	/*TODO: get a process from PRIORITY [ready_queue].
 	 * Remember to use lock to protect the queue
 	 * */
 	pthread_mutex_lock(&queue_lock);
-	for (int i = 0; i < MAX_PRIO; i++) {
+	int i;
+	for (i = MAX_PRIO - 1; i >= 0; i--) {
+		if (mlq_ready_queue[i].size != 0) 
+		{
 			proc = dequeue(&mlq_ready_queue[i]);
-			if (proc) break;
+			break;
+		}
 	}
+	// if(i == -1)
+	// {
+	// 	for(int j=0; j < run_queue.size; j++){
+	// 		enqueue(&mlq_ready_queue[run_queue.proc[j]->prio],run_queue.proc[j]);
+	// 	}
+	// 	run_queue.size = 0;
+
+	// 	for(int k = MAX_PRIO - 1; k >= 0; k--)
+	// 	{
+	// 		if(mlq_ready_queue[k].size != 0)
+	// 		{
+	// 			proc = dequeue(&mlq_ready_queue[k]);
+	// 			break;
+	// 		}
+	// 	}		
+	// }
 	pthread_mutex_unlock(&queue_lock);
-	return proc;	
+	return proc;
 }
 
 void put_mlq_proc(struct pcb_t * proc) {
